@@ -1,16 +1,27 @@
-import { Ollama } from 'ollama'
 import { CONFIG } from './config.js'
-const MODEL = CONFIG.model;
+import * as readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
+import { askStream } from './chat.js';
 
-const ollama = new Ollama({
-    host: process.env.OLLAMA_HOST
-});
+const rl = readline.createInterface({ input, output });
+console.log(`\n🤖 Assistent is running (model: ${CONFIG.model})`);
+console.log(`Write something. commands: /exit\n`);
 
-const res = await ollama.chat({
-    model: MODEL,
-    messages: [
-        { role: 'user', content: 'Привет! Ответь одним предложением: ты кто?' },
-    ],
-});
 
-console.log(`[${MODEL}]`, res.message.content);
+while (true) {
+    const userInput = (await rl.question('Ты: ')).trim();
+
+    if (!userInput) continue;
+    if (userInput === '/exit') break;
+
+    process.stdout.write('AI: ');
+    try {
+        await askStream(userInput);
+    } catch (err) {
+        console.error('\n[ошибка]', err instanceof Error ? err.message : err);
+    }
+    console.log(); // пустая строка между ходами
+}
+
+rl.close();
+console.log('Пока! 👋');
